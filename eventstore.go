@@ -67,10 +67,10 @@ func NewEventStore(store *Store) *EventStore {
 	return evs
 }
 
-func (evs *EventStore) Add(data interface{}) error {
+func (evs *EventStore) Add(data interface{}) (*colog.Entry, error) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	payload := EventPayload{
@@ -78,9 +78,7 @@ func (evs *EventStore) Add(data interface{}) error {
 		Data: jsonData,
 	}
 
-	_, err = evs.store.Add(&payload)
-
-	return err
+	return evs.store.Add(&payload)
 }
 
 func (evs *EventStore) Query(qry colog.Query) EventResult {
