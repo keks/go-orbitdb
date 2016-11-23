@@ -10,7 +10,7 @@ import (
 	"os"
 )
 
-type Store struct {
+type OrbitDB struct {
 	topic string
 
 	logger *log.Logger
@@ -18,34 +18,34 @@ type Store struct {
 	pubsub pubsub.PubSub
 }
 
-func NewStore(topic string) (*Store, error) {
-	s := &Store{
+func NewOrbitDB(topic string) (*OrbitDB, error) {
+	db := &OrbitDB{
 		topic:  topic,
-		logger: log.New(os.Stderr, "orbit.Store ", log.Ltime|log.Lshortfile),
+		logger: log.New(os.Stderr, "orbit.OrbitDB ", log.Ltime|log.Lshortfile),
 		colog:  colog.New(db.New()),
 		pubsub: ippubsub.New(),
 	}
 
-	go s.handleSubscription(topic)
+	go db.handleSubscription(topic)
 
-	return s, nil
+	return db, nil
 }
 
-func (s *Store) Add(data interface{}) (*colog.Entry, error) {
-	e, err := s.colog.Add(data)
+func (db *OrbitDB) Add(data interface{}) (*colog.Entry, error) {
+	e, err := db.colog.Add(data)
 	if err != nil {
 		return e, err
 	}
 
-	err = s.pubsub.Publish(s.topic, string(e.Hash))
+	err = db.pubsub.Publish(db.topic, string(e.Hash))
 
 	return e, err
 }
 
-func (s *Store) handleSubscription(topic string) {
-	sub, err := s.pubsub.Subscribe(topic)
+func (db *OrbitDB) handleSubscription(topic string) {
+	sub, err := db.pubsub.Subscribe(topic)
 	if err != nil {
-		s.logger.Println("subscribe error:", err, "; aborting")
+		db.logger.Println("subscribe error:", err, "; aborting")
 		return
 	}
 
@@ -71,18 +71,18 @@ L:
 		case rec := <-recCh:
 			go next()
 
-			err := s.colog.FetchFromHead(colog.Hash(rec.Data()))
+			err := db.colog.FetchFromHead(colog.Hash(rec.Data()))
 			if err != nil {
-				s.logger.Println("fetch error:", err, "; continuing")
+				db.logger.Println("fetch error:", err, "; continuing")
 			}
 
 		case err := <-errCh:
-			s.logger.Println("pubsub error:", err, "; cancelling")
+			db.logger.Println("pubsub error:", err, "; cancelling")
 			break L
 		}
 	}
 }
 
-func (s *Store) Watch() <-chan *colog.Entry {
-	return s.colog.Watch()
+func (db *OrbitDB) Watch() <-chan *colog.Entry {
+	return db.colog.Watch()
 }

@@ -1,67 +1,62 @@
 package orbitdb
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/keks/go-ipfs-colog"
 )
-
-type ctrIndex struct {
-	sync.Mutex
-
-	watchCh <-chan *colog.Entry
-	value   int
-}
-
-func (idx *ctrIndex) work() {
-	for e := range idx.watchCh {
-		if e == nil {
-			break
-		}
-
-		var p CtrPayload
-
-		err := e.Get(&p)
-		if err != nil {
-			continue
-		}
-
-		if p.Op == "COUNTER" {
-			idx.Lock()
-			idx.value += p.Value
-			idx.Unlock()
-		}
-	}
-	fmt.Println("ctridx.work stop.")
-}
-
-func (idx *ctrIndex) Value() int {
-	idx.Lock()
-	defer idx.Unlock()
-
-	return idx.value
-}
 
 type CtrPayload struct {
 	Op    string `json:"op"`
 	Value int    `json:"value"`
 }
 
+func ctrCast(e *colog.Entry) (pl CtrPayload, err error) {
+	err = e.Get(&pl)
+	return pl, err
+}
+
+type ctrIndex struct {
+	l sync.Mutex
+
+	value int
+}
+
+func (idx *ctrIndex) handleCounter(e *colog.Entry) error {
+	pl, err := ctrCast(e)
+	if err != nil {
+		return err
+	}
+
+	idx.l.Lock()
+	idx.value += pl.Value
+	idx.l.Unlock()
+
+	return nil
+}
+
+func (idx *ctrIndex) Value() int {
+	idx.l.Lock()
+	defer idx.l.Unlock()
+
+	return idx.value
+}
+
 type CtrStore struct {
-	s   *Store
+	db  *OrbitDB
 	idx *ctrIndex
 }
 
-func NewCtrStore(store *Store) *CtrStore {
+func NewCtrStore(db *OrbitDB) *CtrStore {
 	s := &CtrStore{
-		s: store,
-		idx: &ctrIndex{
-			watchCh: store.Watch(),
-		},
+		db:  db,
+		idx: &ctrIndex{},
 	}
 
-	go s.idx.work()
+	mux := NewHandlerMux()
+	mux.AddHandler(OpCounter, s.idx.handleCounter)
+
+	go mux.Serve(db)
 
 	return s
 }
@@ -72,7 +67,7 @@ func (cs *CtrStore) Increment(by int) (*colog.Entry, error) {
 		Value: by,
 	}
 
-	return cs.s.Add(&payload)
+	return cs.db.Add(&payload)
 }
 
 func (cs *CtrStore) Value() int {

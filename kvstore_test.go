@@ -6,12 +6,12 @@ import (
 )
 
 func ExampleKVStore() {
-	s1, err := NewStore(topic)
+	s1, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
 	time.Sleep(5 * time.Millisecond)
 
-	s2, err := NewStore(topic)
+	s2, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
 	kv1 := NewKVStore(s1)
@@ -21,7 +21,7 @@ func ExampleKVStore() {
 	err = kv1.Put("foo", "bar")
 	assert(err == nil, err)
 
-	time.Sleep(5 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 
 	val2, err := kv2.Get("foo")
 	assert(err == nil, err)

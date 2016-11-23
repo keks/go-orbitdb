@@ -17,12 +17,12 @@ func assert(check bool, args ...interface{}) {
 }
 
 func ExampleStore_2party() {
-	s1, err := NewStore(topic)
+	s1, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
 	time.Sleep(5 * time.Millisecond)
 
-	s2, err := NewStore(topic)
+	s2, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
 	fmt.Println("s1.Watch()")
@@ -50,17 +50,17 @@ func ExampleStore_2party() {
 }
 
 func ExampleStore_3party() {
-	s1, err := NewStore(topic)
+	s1, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
 	time.Sleep(5 * time.Millisecond)
 
-	s2, err := NewStore(topic)
+	s2, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
 	time.Sleep(5 * time.Millisecond)
 
-	s3, err := NewStore(topic)
+	s3, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
 	fmt.Println("s1.Watch()")

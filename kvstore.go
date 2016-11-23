@@ -17,48 +17,49 @@ type kvPayload struct {
 	Op    string `json:"op"`
 }
 
-type kvIndex struct {
-	sync.Mutex
-
-	watchCh <-chan *colog.Entry
-	kv      map[string]string
+func kvCast(e *colog.Entry) (pl kvPayload, err error) {
+	err = e.Get(&pl)
+	return pl, err
 }
 
-func (idx *kvIndex) work() {
-	for {
-		e := <-idx.watchCh
+type kvIndex struct {
+	l sync.Mutex
 
-		if e == nil {
-			break
-		}
+	kv map[string]string
+}
 
-		p := kvPayload{}
-
-		err := e.Get(&p)
-		if err != nil {
-			continue
-		}
-
-		if p.Op == "PUT" {
-			idx.Lock()
-			idx.kv[p.Key] = p.Value
-			idx.Unlock()
-		}
-
-		if p.Op == "DEL" {
-			idx.Lock()
-			delete(idx.kv, p.Key)
-			idx.Unlock()
-		}
+func (idx *kvIndex) handlePut(e *colog.Entry) error {
+	pl, err := kvCast(e)
+	if err != nil {
+		return err
 	}
+
+	idx.l.Lock()
+	idx.kv[pl.Key] = pl.Value
+	idx.l.Unlock()
+
+	return nil
+}
+
+func (idx *kvIndex) handleDel(e *colog.Entry) error {
+	pl, err := kvCast(e)
+	if err != nil {
+		return err
+	}
+
+	idx.l.Lock()
+	delete(idx.kv, pl.Key)
+	idx.l.Unlock()
+
+	return nil
 }
 
 func (idx *kvIndex) Get(key string) (value string, err error) {
 	var ok bool
 
-	idx.Lock()
+	idx.l.Lock()
 	value, ok = idx.kv[key]
-	idx.Unlock()
+	idx.l.Unlock()
 
 	if !ok {
 		err = ErrNotFound
@@ -68,23 +69,25 @@ func (idx *kvIndex) Get(key string) (value string, err error) {
 }
 
 type KVStore struct {
-	store *Store
-	idx   *kvIndex
+	db  *OrbitDB
+	idx *kvIndex
 }
 
-func NewKVStore(store *Store) *KVStore {
+func NewKVStore(db *OrbitDB) *KVStore {
 	kvs := &KVStore{
-		store: store,
+		db: db,
 		idx: &kvIndex{
-			watchCh: store.Watch(),
-			kv:      make(map[string]string),
+			kv: make(map[string]string),
 		},
 	}
 
-	go kvs.idx.work()
+	mux := NewHandlerMux()
+	mux.AddHandler(OpPut, kvs.idx.handlePut)
+	mux.AddHandler(OpDel, kvs.idx.handleDel)
+
+	go mux.Serve(db)
 
 	return kvs
-
 }
 
 func (kv *KVStore) Put(key, value string) error {
@@ -94,7 +97,7 @@ func (kv *KVStore) Put(key, value string) error {
 		Op:    "PUT",
 	}
 
-	_, err := kv.store.Add(payload)
+	_, err := kv.db.Add(&payload)
 	return err
 }
 
@@ -108,6 +111,6 @@ func (kv *KVStore) Delete(key string) error {
 		Op:  "DEL",
 	}
 
-	_, err := kv.store.Add(payload)
+	_, err := kv.db.Add(&payload)
 	return err
 }

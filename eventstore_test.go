@@ -9,12 +9,12 @@ import (
 )
 
 func ExampleEventStore() {
-	s1, err := NewStore(topic)
+	s1, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
 	time.Sleep(5 * time.Millisecond)
 
-	s2, err := NewStore(topic)
+	s2, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
 	ev1 := NewEventStore(s1)

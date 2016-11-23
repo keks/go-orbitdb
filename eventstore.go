@@ -20,49 +20,50 @@ func (pl EventPayload) DataString() string {
 
 type EventResult func() (EventPayload, error)
 
-type evIndex struct {
-	sync.Mutex
+type eventIndex struct {
+	l sync.Mutex
 
-	watchCh <-chan *colog.Entry
-	events  map[colog.Hash]*colog.Entry
+	added map[colog.Hash]struct{}
 }
 
-func (idx *evIndex) work() {
-	for {
-		e := <-idx.watchCh
-
-		if e == nil {
-			break
-		}
-
-		p := EventPayload{}
-
-		err := e.Get(&p)
-		if err != nil || p.Op != "ADD" {
-			continue
-		}
-
-		idx.Lock()
-		idx.events[e.Hash] = e
-		idx.Unlock()
+func (idx *eventIndex) handleAdd(e *colog.Entry) error {
+	_, err := eventCast(e)
+	if err != nil {
+		return err
 	}
+
+	idx.l.Lock()
+	idx.added[e.Hash] = struct{}{}
+	idx.l.Unlock()
+
+	return nil
+}
+
+func (idx *eventIndex) has(hash colog.Hash) bool {
+	idx.l.Lock()
+	defer idx.l.Unlock()
+
+	_, has := idx.added[hash]
+	return has
 }
 
 type EventStore struct {
-	idx   *evIndex
-	store *Store
+	idx *eventIndex
+	db  *OrbitDB
 }
 
-func NewEventStore(store *Store) *EventStore {
+func NewEventStore(db *OrbitDB) *EventStore {
 	evs := &EventStore{
-		store: store,
-		idx: &evIndex{
-			watchCh: store.Watch(),
-			events:  make(map[colog.Hash]*colog.Entry),
+		db: db,
+		idx: &eventIndex{
+			added: make(map[colog.Hash]struct{}),
 		},
 	}
 
-	go evs.idx.work()
+	mux := NewHandlerMux()
+	mux.AddHandler(OpAdd, evs.idx.handleAdd)
+
+	go mux.Serve(db)
 
 	return evs
 }
@@ -78,26 +79,21 @@ func (evs *EventStore) Add(data interface{}) (*colog.Entry, error) {
 		Data: jsonData,
 	}
 
-	return evs.store.Add(&payload)
+	return evs.db.Add(&payload)
 }
 
 func (evs *EventStore) Query(qry colog.Query) EventResult {
-	res := evs.store.colog.Query(qry)
+	res := evs.db.colog.Query(qry)
 
 	return func() (EventPayload, error) {
-		var payload EventPayload
 		for {
 			e, err := res()
 			if err != nil {
 				return EventPayload{}, err
 			}
 
-			if err = e.Get(&payload); err != nil {
-				continue
-			}
-
-			if payload.Op == "ADD" {
-				return payload, err
+			if evs.idx.has(e.Hash) {
+				return eventCast(e)
 			}
 		}
 
