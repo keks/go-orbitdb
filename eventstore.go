@@ -8,7 +8,7 @@ import (
 )
 
 type EventPayload struct {
-	Op   string          `json:"op"`
+	Op   `json:"op"`
 	Data json.RawMessage `json:"data"`
 }
 
@@ -75,7 +75,7 @@ func (evs *EventStore) Add(data interface{}) (*colog.Entry, error) {
 	}
 
 	payload := EventPayload{
-		Op:   "ADD",
+		Op:   OpAdd,
 		Data: jsonData,
 	}
 

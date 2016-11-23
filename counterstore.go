@@ -7,8 +7,8 @@ import (
 )
 
 type CtrPayload struct {
-	Op    string `json:"op"`
-	Value int    `json:"value"`
+	Op    `json:"op"`
+	Value int `json:"value"`
 }
 
 func ctrCast(e *colog.Entry) (pl CtrPayload, err error) {
@@ -63,7 +63,7 @@ func NewCtrStore(db *OrbitDB) *CtrStore {
 
 func (cs *CtrStore) Increment(by int) (*colog.Entry, error) {
 	payload := CtrPayload{
-		Op:    "COUNTER",
+		Op:    OpCounter,
 		Value: by,
 	}
 

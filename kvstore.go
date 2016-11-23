@@ -14,7 +14,7 @@ var (
 type kvPayload struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
-	Op    string `json:"op"`
+	Op    `json:"op"`
 }
 
 func kvCast(e *colog.Entry) (pl kvPayload, err error) {
@@ -94,7 +94,7 @@ func (kv *KVStore) Put(key, value string) error {
 	payload := kvPayload{
 		Key:   key,
 		Value: value,
-		Op:    "PUT",
+		Op:    OpPut,
 	}
 
 	_, err := kv.db.Add(&payload)
@@ -108,7 +108,7 @@ func (kv *KVStore) Get(key string) (string, error) {
 func (kv *KVStore) Delete(key string) error {
 	payload := kvPayload{
 		Key: key,
-		Op:  "DEL",
+		Op:  OpDel,
 	}
 
 	_, err := kv.db.Add(&payload)
