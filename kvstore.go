@@ -85,7 +85,7 @@ func NewKVStore(db *OrbitDB) *KVStore {
 		},
 	}
 
-	mux := handler.NewHandlerMux()
+	mux := handler.NewMux()
 	mux.AddHandler(OpPut, kvs.idx.handlePut)
 	mux.AddHandler(OpDel, kvs.idx.handleDel)
 

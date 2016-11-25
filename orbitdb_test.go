@@ -16,7 +16,7 @@ func assert(check bool, args ...interface{}) {
 	}
 }
 
-func ExampleStore_2party() {
+func ExampleOrbitDB_twoParty() {
 	s1, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
@@ -28,7 +28,7 @@ func ExampleStore_2party() {
 	fmt.Println("s1.colog.Watch()")
 	eCh := s1.colog.Watch()
 
-	fmt.Println("s2.Add(\"foo\")")
+	fmt.Println(`s2.Add("foo")`)
 	e1, err := s2.Add("foo")
 	if err != nil {
 		fmt.Println(err)
@@ -49,7 +49,7 @@ func ExampleStore_2party() {
 	// ok.
 }
 
-func ExampleStore_3party() {
+func ExampleOrbitDB_threeParty() {
 	s1, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
@@ -69,7 +69,7 @@ func ExampleStore_3party() {
 	fmt.Println("s2.colog.Watch()")
 	eCh2 := s2.colog.Watch()
 
-	fmt.Println("s3.Add(\"foo\")")
+	fmt.Println(`s3.Add("foo")`)
 	e1, err := s3.Add("foo")
 	if err != nil {
 		fmt.Println(err)

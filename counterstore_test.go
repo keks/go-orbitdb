@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func ExampleCounter() {
+func ExampleCtrStore() {
 	s1, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 

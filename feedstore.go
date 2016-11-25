@@ -64,7 +64,7 @@ func NewFeedStore(db *OrbitDB) *FeedStore {
 		},
 	}
 
-	mux := handler.NewHandlerMux()
+	mux := handler.NewMux()
 	mux.AddHandler(OpAdd, fs.idx.handleAdd)
 	mux.AddHandler(OpDel, fs.idx.handleDel)
 

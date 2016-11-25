@@ -95,7 +95,7 @@ func NewEventStore(db *OrbitDB) *EventStore {
 		},
 	}
 
-	mux := handler.NewHandlerMux()
+	mux := handler.NewMux()
 	mux.AddHandler(OpAdd, evs.idx.handleAdd)
 
 	go db.Notify(mux)

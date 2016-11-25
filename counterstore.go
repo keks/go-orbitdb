@@ -56,7 +56,7 @@ func NewCtrStore(db *OrbitDB) *CtrStore {
 		idx: &ctrIndex{},
 	}
 
-	mux := handler.NewHandlerMux()
+	mux := handler.NewMux()
 	mux.AddHandler(OpCounter, s.idx.handleCounter)
 
 	go db.Notify(mux)

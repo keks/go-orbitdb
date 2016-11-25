@@ -1,4 +1,4 @@
-// OrbitDB is a Go implementation of https://github.com/haadcode/orbit-db.
+// Package orbitdb is a Go implementation of https://github.com/haadcode/orbit-db.
 package orbitdb
 
 import (
@@ -93,8 +93,8 @@ L:
 func (db *OrbitDB) Notify(h handler.Handler) {
 	for e := range db.colog.Watch() {
 		err := h.Handle(e)
-		if err != nil && err != handler.WrongOp {
-			// ignore WrongOp errors
+		if err != nil && err != handler.ErrWrongOp {
+			// ignore ErrWrongOp errors
 			db.logger.Println(err)
 		}
 	}

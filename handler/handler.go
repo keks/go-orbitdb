@@ -11,14 +11,14 @@ import (
 type Op string
 
 var (
-	// WrongOp is returned if the called handler does not support the operation
+	// ErrWrongOp is returned if the called handler does not support the operation
 	// specified in the given colog Entry.
-	WrongOp = fmt.Errorf("operation not supported")
+	ErrWrongOp = fmt.Errorf("operation not supported")
 )
 
-// HandlerFunc is a function that can be called to handle an incoming colog
+// Func is a function that can be called to handle an incoming colog
 // Entry.
-type HandlerFunc func(*colog.Entry) error
+type Func func(*colog.Entry) error
 
 // Handler is a type that has a HandlerFunc Handle.
 type Handler interface {
@@ -29,35 +29,35 @@ type opPayload struct {
 	Op `json:"op"`
 }
 
-// HandlerMux manages several handlers and calles them based on the operation.
-type HandlerMux struct {
+// Mux manages several handlers and calles them based on the operation.
+type Mux struct {
 	l        sync.Mutex
-	handlers map[Op]HandlerFunc
+	handlers map[Op]Func
 }
 
-// NewHandlerMux returns a new HandlerMux.
-func NewHandlerMux() *HandlerMux {
-	return &HandlerMux{
-		handlers: make(map[Op]HandlerFunc),
+// NewMux returns a new HandlerMux.
+func NewMux() *Mux {
+	return &Mux{
+		handlers: make(map[Op]Func),
 	}
 }
 
 // AddHandler adds a handler h that is to be called when a Entry with operation
 // op arrives.
-func (hm *HandlerMux) AddHandler(op Op, h HandlerFunc) {
+func (hm *Mux) AddHandler(op Op, h Func) {
 	hm.l.Lock()
 	hm.handlers[op] = h
 	hm.l.Unlock()
 }
 
 // Handle examines the operation specified in e and calles the appropriate HandlerFunc.
-// Returns WrongOp if the given op is not supported.
-func (hm *HandlerMux) Handle(e *colog.Entry) error {
+// Returns ErrWrongOp if the given op is not supported.
+func (hm *Mux) Handle(e *colog.Entry) error {
 	var opPl opPayload
 
 	err := e.Get(&opPl)
 	if err != nil {
-		return WrongOp
+		return ErrWrongOp
 	}
 
 	hm.l.Lock()
@@ -65,7 +65,7 @@ func (hm *HandlerMux) Handle(e *colog.Entry) error {
 	hm.l.Unlock()
 
 	if !ok {
-		return WrongOp
+		return ErrWrongOp
 	}
 
 	return h(e)
