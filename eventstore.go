@@ -5,11 +5,12 @@ import (
 	"sync"
 
 	"github.com/keks/go-ipfs-colog"
+	"github.com/keks/go-orbitdb/handler"
 )
 
 type eventPayload struct {
-	Op   `json:"op"`
-	Data json.RawMessage `json:"data"`
+	handler.Op `json:"op"`
+	Data       json.RawMessage `json:"data"`
 }
 
 func eventCast(e *colog.Entry) (eventPayload, error) {
@@ -94,10 +95,10 @@ func NewEventStore(db *OrbitDB) *EventStore {
 		},
 	}
 
-	mux := NewHandlerMux()
+	mux := handler.NewHandlerMux()
 	mux.AddHandler(OpAdd, evs.idx.handleAdd)
 
-	go mux.Serve(db)
+	go db.Notify(mux)
 
 	return evs
 }

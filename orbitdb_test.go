@@ -25,8 +25,8 @@ func ExampleStore_2party() {
 	s2, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
-	fmt.Println("s1.Watch()")
-	eCh := s1.Watch()
+	fmt.Println("s1.colog.Watch()")
+	eCh := s1.colog.Watch()
 
 	fmt.Println("s2.Add(\"foo\")")
 	e1, err := s2.Add("foo")
@@ -43,7 +43,7 @@ func ExampleStore_2party() {
 	fmt.Println("ok.")
 
 	// Output:
-	// s1.Watch()
+	// s1.colog.Watch()
 	// s2.Add("foo")
 	// <-eCh
 	// ok.
@@ -63,11 +63,11 @@ func ExampleStore_3party() {
 	s3, err := NewOrbitDB(topic)
 	assert(err == nil, err)
 
-	fmt.Println("s1.Watch()")
-	eCh1 := s1.Watch()
+	fmt.Println("s1.colog.Watch()")
+	eCh1 := s1.colog.Watch()
 
-	fmt.Println("s2.Watch()")
-	eCh2 := s2.Watch()
+	fmt.Println("s2.colog.Watch()")
+	eCh2 := s2.colog.Watch()
 
 	fmt.Println("s3.Add(\"foo\")")
 	e1, err := s3.Add("foo")
@@ -88,8 +88,8 @@ func ExampleStore_3party() {
 	fmt.Println("ok.")
 
 	// Output:
-	// s1.Watch()
-	// s2.Watch()
+	// s1.colog.Watch()
+	// s2.colog.Watch()
 	// s3.Add("foo")
 	// <-eCh1
 	// <-eCh2

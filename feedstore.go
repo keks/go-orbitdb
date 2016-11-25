@@ -3,7 +3,9 @@ package orbitdb
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/keks/go-ipfs-colog"
+	"github.com/keks/go-orbitdb/handler"
 )
 
 // ErrMalformedEntry is returned when a colog Entry does not have the expected
@@ -62,11 +64,11 @@ func NewFeedStore(db *OrbitDB) *FeedStore {
 		},
 	}
 
-	mux := NewHandlerMux()
+	mux := handler.NewHandlerMux()
 	mux.AddHandler(OpAdd, fs.idx.handleAdd)
 	mux.AddHandler(OpDel, fs.idx.handleDel)
 
-	go mux.Serve(db)
+	go db.Notify(mux)
 
 	return fs
 }

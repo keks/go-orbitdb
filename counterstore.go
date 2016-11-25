@@ -4,11 +4,12 @@ import (
 	"sync"
 
 	"github.com/keks/go-ipfs-colog"
+	"github.com/keks/go-orbitdb/handler"
 )
 
 type ctrPayload struct {
-	Op    `json:"op"`
-	Value int `json:"value"`
+	handler.Op `json:"op"`
+	Value      int `json:"value"`
 }
 
 func ctrCast(e *colog.Entry) (pl ctrPayload, err error) {
@@ -55,10 +56,10 @@ func NewCtrStore(db *OrbitDB) *CtrStore {
 		idx: &ctrIndex{},
 	}
 
-	mux := NewHandlerMux()
+	mux := handler.NewHandlerMux()
 	mux.AddHandler(OpCounter, s.idx.handleCounter)
 
-	go mux.Serve(db)
+	go db.Notify(mux)
 
 	return s
 }

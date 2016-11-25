@@ -3,7 +3,9 @@ package orbitdb
 
 import (
 	"github.com/keks/go-ipfs-colog"
+
 	db "github.com/keks/go-ipfs-colog/immutabledb/ipfs-api"
+	"github.com/keks/go-orbitdb/handler"
 	"github.com/keks/go-orbitdb/pubsub"
 	ippubsub "github.com/keks/go-orbitdb/pubsub/ipfs-api"
 
@@ -87,7 +89,13 @@ L:
 	}
 }
 
-// Watch returns a new channel that returns new Entries as they arrive.
-func (db *OrbitDB) Watch() <-chan *colog.Entry {
-	return db.colog.Watch()
+// Notify informs a handler about new colog Entries.
+func (db *OrbitDB) Notify(h handler.Handler) {
+	for e := range db.colog.Watch() {
+		err := h.Handle(e)
+		if err != nil && err != handler.WrongOp {
+			// ignore WrongOp errors
+			db.logger.Println(err)
+		}
+	}
 }

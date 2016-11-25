@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/keks/go-ipfs-colog"
+	"github.com/keks/go-orbitdb/handler"
 )
 
 var (
@@ -13,9 +14,9 @@ var (
 )
 
 type kvPayload struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-	Op    `json:"op"`
+	Key        string `json:"key"`
+	Value      string `json:"value"`
+	handler.Op `json:"op"`
 }
 
 func kvCast(e *colog.Entry) (pl kvPayload, err error) {
@@ -84,11 +85,11 @@ func NewKVStore(db *OrbitDB) *KVStore {
 		},
 	}
 
-	mux := NewHandlerMux()
+	mux := handler.NewHandlerMux()
 	mux.AddHandler(OpPut, kvs.idx.handlePut)
 	mux.AddHandler(OpDel, kvs.idx.handleDel)
 
-	go mux.Serve(db)
+	go db.Notify(mux)
 
 	return kvs
 }
