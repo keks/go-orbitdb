@@ -1,3 +1,4 @@
+// OrbitDB is a Go implementation of https://github.com/haadcode/orbit-db.
 package orbitdb
 
 import (
@@ -10,6 +11,7 @@ import (
 	"os"
 )
 
+// OrbitDB manages a colog and keeps it up-to-date using ipfs pubsub.
 type OrbitDB struct {
 	topic string
 
@@ -18,6 +20,7 @@ type OrbitDB struct {
 	pubsub pubsub.PubSub
 }
 
+// NewOrbitDB returns a new OrbitDB and subscribes to the given topic string.
 func NewOrbitDB(topic string) (*OrbitDB, error) {
 	db := &OrbitDB{
 		topic:  topic,
@@ -31,6 +34,7 @@ func NewOrbitDB(topic string) (*OrbitDB, error) {
 	return db, nil
 }
 
+// Add adds a given value to the database.
 func (db *OrbitDB) Add(data interface{}) (*colog.Entry, error) {
 	e, err := db.colog.Add(data)
 	if err != nil {
@@ -83,6 +87,7 @@ L:
 	}
 }
 
+// Watch returns a new channel that returns new Entries as they arrive.
 func (db *OrbitDB) Watch() <-chan *colog.Entry {
 	return db.colog.Watch()
 }

@@ -33,13 +33,13 @@ func ExampleEventStore() {
 	res := ev2.Query(colog.Query{})
 
 	var (
-		p EventPayload
+		p Event
 	)
 	for err == nil {
 		p, err = res()
 		assert(err == nil || err == io.EOF, err)
 
-		fmt.Println(p.DataString())
+		fmt.Println(p.GetString())
 	}
 
 	// Output:

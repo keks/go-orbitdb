@@ -7,18 +7,50 @@ import (
 	"github.com/keks/go-ipfs-colog"
 )
 
-type EventPayload struct {
+type eventPayload struct {
 	Op   `json:"op"`
 	Data json.RawMessage `json:"data"`
 }
 
-func (pl EventPayload) DataString() string {
+func eventCast(e *colog.Entry) (eventPayload, error) {
+	var pl eventPayload
+
+	err := e.Get(&pl)
+	if err != nil {
+		return pl, err
+	}
+
+	if len(pl.Data) == 0 {
+		return pl, ErrMalformedEntry
+	}
+
+	return pl, nil
+}
+
+func (pl eventPayload) Event() Event {
+	return Event{data: pl.Data}
+}
+
+// Event is an event stored in an EventStore or FeedStore.
+type Event struct {
+	data json.RawMessage
+}
+
+// GetString returns the string value of the contained data.
+// If the contained data is not a string, it returns "".
+func (e Event) GetString() string {
 	var s string
-	json.Unmarshal(pl.Data, &s)
+	json.Unmarshal(e.data, &s)
 	return s
 }
 
-type EventResult func() (EventPayload, error)
+// Get parses the contained data into v. v Needs to be a pointer.
+func (e Event) Get(v interface{}) error {
+	return json.Unmarshal(e.data, v)
+}
+
+// EventResult is the result of a query to an EventStore or FeedStore.
+type EventResult func() (Event, error)
 
 type eventIndex struct {
 	l sync.Mutex
@@ -47,11 +79,13 @@ func (idx *eventIndex) has(hash colog.Hash) bool {
 	return has
 }
 
+// EventStore stores events in an OrbitDB
 type EventStore struct {
 	idx *eventIndex
 	db  *OrbitDB
 }
 
+// NewEventStore returns an EventStore for the given OrbitDB.
 func NewEventStore(db *OrbitDB) *EventStore {
 	evs := &EventStore{
 		db: db,
@@ -68,13 +102,14 @@ func NewEventStore(db *OrbitDB) *EventStore {
 	return evs
 }
 
+// Add adds an event to the store.
 func (evs *EventStore) Add(data interface{}) (*colog.Entry, error) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
 
-	payload := EventPayload{
+	payload := eventPayload{
 		Op:   OpAdd,
 		Data: jsonData,
 	}
@@ -82,18 +117,25 @@ func (evs *EventStore) Add(data interface{}) (*colog.Entry, error) {
 	return evs.db.Add(&payload)
 }
 
+// Query queries the events using a given query qry.
 func (evs *EventStore) Query(qry colog.Query) EventResult {
 	res := evs.db.colog.Query(qry)
 
-	return func() (EventPayload, error) {
+	return func() (Event, error) {
 		for {
 			e, err := res()
 			if err != nil {
-				return EventPayload{}, err
+				return Event{}, err
 			}
 
 			if evs.idx.has(e.Hash) {
-				return eventCast(e)
+				pl, err := eventCast(e)
+				if err != nil {
+					return Event{}, err
+				}
+
+				return pl.Event(), nil
+
 			}
 		}
 

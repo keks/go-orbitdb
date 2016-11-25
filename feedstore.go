@@ -6,22 +6,9 @@ import (
 	"github.com/keks/go-ipfs-colog"
 )
 
+// ErrMalformedEntry is returned when a colog Entry does not have the expected
+// format.
 var ErrMalformedEntry = fmt.Errorf("read malformed colog entry")
-
-func eventCast(e *colog.Entry) (EventPayload, error) {
-	var pl EventPayload
-
-	err := e.Get(&pl)
-	if err != nil {
-		return pl, err
-	}
-
-	if len(pl.Data) == 0 {
-		return pl, ErrMalformedEntry
-	}
-
-	return pl, nil
-}
 
 type feedIndex eventIndex
 
@@ -45,7 +32,7 @@ func (idx *feedIndex) handleDel(e *colog.Entry) error {
 	}
 
 	idx.l.Lock()
-	delete(idx.added, colog.Hash(pl.DataString()))
+	delete(idx.added, colog.Hash(pl.Event().GetString()))
 	idx.l.Unlock()
 
 	return nil
@@ -60,11 +47,13 @@ func (idx *feedIndex) has(hash colog.Hash) bool {
 	return has
 }
 
+// FeedStore is similar to an EventStore but also allows deleting events.
 type FeedStore struct {
 	db  *OrbitDB
 	idx *feedIndex
 }
 
+// NewFeedStore returns a FeedStore for the given OrbitDB.
 func NewFeedStore(db *OrbitDB) *FeedStore {
 	fs := &FeedStore{
 		db: db,
@@ -82,21 +71,14 @@ func NewFeedStore(db *OrbitDB) *FeedStore {
 	return fs
 }
 
-func (fs *FeedStore) Get(hash colog.Hash) (*colog.Entry, error) {
-	if added := fs.idx.has(hash); !added {
-		return nil, ErrNotFound
-	}
-
-	return fs.db.colog.Get(hash)
-}
-
+// Delete deletes the event at the given hash.
 func (fs *FeedStore) Delete(hash colog.Hash) (*colog.Entry, error) {
 	jsonHash, err := json.Marshal(hash)
 	if err != nil {
 		return nil, err
 	}
 
-	payload := EventPayload{
+	payload := eventPayload{
 		Op:   OpDel,
 		Data: jsonHash,
 	}
@@ -104,13 +86,14 @@ func (fs *FeedStore) Delete(hash colog.Hash) (*colog.Entry, error) {
 	return fs.db.Add(&payload)
 }
 
+// Add adds a new Event.
 func (fs *FeedStore) Add(data interface{}) (*colog.Entry, error) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
 
-	payload := EventPayload{
+	payload := eventPayload{
 		Op:   OpAdd,
 		Data: jsonData,
 	}
@@ -118,18 +101,24 @@ func (fs *FeedStore) Add(data interface{}) (*colog.Entry, error) {
 	return fs.db.Add(&payload)
 }
 
+// Query queries the events using a given query qry. It omits deleted events.
 func (fs *FeedStore) Query(qry colog.Query) EventResult {
 	res := fs.db.colog.Query(qry)
 
-	return func() (EventPayload, error) {
+	return func() (Event, error) {
 		for {
 			e, err := res()
 			if err != nil {
-				return EventPayload{}, err
+				return Event{}, err
 			}
 
 			if fs.idx.has(e.Hash) {
-				return eventCast(e)
+				pl, err := eventCast(e)
+				if err != nil {
+					return Event{}, err
+				}
+
+				return pl.Event(), nil
 			}
 		}
 	}

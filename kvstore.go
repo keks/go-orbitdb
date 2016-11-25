@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	ErrNotFound = fmt.Errorf("key not found in index")
+	// ErrNotFound is returned when the given key could not be found in the db.
+	ErrNotFound = fmt.Errorf("key not found")
 )
 
 type kvPayload struct {
@@ -68,11 +69,13 @@ func (idx *kvIndex) Get(key string) (value string, err error) {
 	return value, err
 }
 
+// KVStore provides a key-value store on an OrbitDB.
 type KVStore struct {
 	db  *OrbitDB
 	idx *kvIndex
 }
 
+// NewKVStore returns a new KVStore for the given OrbitDB.
 func NewKVStore(db *OrbitDB) *KVStore {
 	kvs := &KVStore{
 		db: db,
@@ -90,6 +93,7 @@ func NewKVStore(db *OrbitDB) *KVStore {
 	return kvs
 }
 
+// Put adds a key-value pair to the KVStore.
 func (kv *KVStore) Put(key, value string) error {
 	payload := kvPayload{
 		Key:   key,
@@ -101,10 +105,12 @@ func (kv *KVStore) Put(key, value string) error {
 	return err
 }
 
+// Get retrieves the value stored at a given key.
 func (kv *KVStore) Get(key string) (string, error) {
 	return kv.idx.Get(key)
 }
 
+// Delete deletes the value at the given key,
 func (kv *KVStore) Delete(key string) error {
 	payload := kvPayload{
 		Key: key,

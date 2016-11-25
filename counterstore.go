@@ -6,12 +6,12 @@ import (
 	"github.com/keks/go-ipfs-colog"
 )
 
-type CtrPayload struct {
+type ctrPayload struct {
 	Op    `json:"op"`
 	Value int `json:"value"`
 }
 
-func ctrCast(e *colog.Entry) (pl CtrPayload, err error) {
+func ctrCast(e *colog.Entry) (pl ctrPayload, err error) {
 	err = e.Get(&pl)
 	return pl, err
 }
@@ -42,11 +42,13 @@ func (idx *ctrIndex) Value() int {
 	return idx.value
 }
 
+// CtrStore manages a counter stored in an OrbitDB.
 type CtrStore struct {
 	db  *OrbitDB
 	idx *ctrIndex
 }
 
+// NewCtrStore returns a CtrStore for the given OrbitDB.
 func NewCtrStore(db *OrbitDB) *CtrStore {
 	s := &CtrStore{
 		db:  db,
@@ -61,15 +63,17 @@ func NewCtrStore(db *OrbitDB) *CtrStore {
 	return s
 }
 
-func (cs *CtrStore) Increment(by int) (*colog.Entry, error) {
-	payload := CtrPayload{
+// Increment increments the counter by n.
+func (cs *CtrStore) Increment(n int) (*colog.Entry, error) {
+	payload := ctrPayload{
 		Op:    OpCounter,
-		Value: by,
+		Value: n,
 	}
 
 	return cs.db.Add(&payload)
 }
 
+// Value returns the current value of the counter.
 func (cs *CtrStore) Value() int {
 	return cs.idx.Value()
 }
