@@ -33,8 +33,27 @@ func ExampleKVStore() {
 	assert(val1 == "bar", "val1 != \"bar\"", val1)
 	fmt.Println("kv1: get foo -> bar")
 
+	fmt.Println("kv2: del(foo)")
+	err = kv2.Delete("foo")
+	assert(err == nil, err)
+
+	time.Sleep(10 * time.Millisecond)
+
+	val2, err = kv2.Get("foo")
+	assert(err == ErrNotFound, err)
+	assert(val2 == "", `val2 != ""`, val2)
+	fmt.Println("kv2: get foo -> ErrNotFound")
+
+	val1, err = kv1.Get("foo")
+	assert(err == ErrNotFound, err)
+	assert(val1 == "", `val1 != ""`, val1)
+	fmt.Println("kv1: get foo -> ErrNotFound")
+
 	//Output:
 	// kv1: foo=bar
 	// kv2: get foo -> bar
 	// kv1: get foo -> bar
+	// kv2: del(foo)
+	// kv2: get foo -> ErrNotFound
+	// kv1: get foo -> ErrNotFound
 }
