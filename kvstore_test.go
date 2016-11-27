@@ -28,7 +28,7 @@ func ExampleKVStore() {
 	assert(val2 == "bar", "val2 != \"bar\"", val2)
 	fmt.Println("kv2: get foo -> bar")
 
-	val1, err := kv2.Get("foo")
+	val1, err := kv1.Get("foo")
 	assert(err == nil, err)
 	assert(val1 == "bar", "val1 != \"bar\"", val1)
 	fmt.Println("kv1: get foo -> bar")
