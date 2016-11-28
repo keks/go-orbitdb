@@ -24,16 +24,18 @@ type OrbitDB struct {
 
 // NewOrbitDB returns a new OrbitDB and subscribes to the given topic string.
 func NewOrbitDB(topic string) (*OrbitDB, error) {
-	db := &OrbitDB{
+	idb, err := db.New()
+
+	odb := &OrbitDB{
 		topic:  topic,
 		logger: log.New(os.Stderr, "orbit.OrbitDB ", log.Ltime|log.Lshortfile),
-		colog:  colog.New(db.New()),
+		colog:  colog.New(idb),
 		pubsub: ippubsub.New(),
 	}
 
-	go db.handleSubscription(topic)
+	go odb.handleSubscription(topic)
 
-	return db, nil
+	return odb, err
 }
 
 // Add adds a given value to the database.
