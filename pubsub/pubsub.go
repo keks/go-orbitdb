@@ -1,5 +1,9 @@
 package pubsub
 
+import (
+	"github.com/libp2p/go-libp2p-peer"
+)
+
 type PubSub interface {
 	Subscribe(topic string) (Subscription, error)
 	Publish(topic string, data string) error
@@ -11,6 +15,6 @@ type Subscription interface {
 }
 
 type Record interface {
-	From() string
-	Data() string
+	From() peer.ID
+	Data() []byte
 }
