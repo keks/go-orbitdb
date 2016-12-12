@@ -1,7 +1,7 @@
 package pubsub
 
 import (
-	shell "github.com/keks/go-ipfs-api"
+	shell "github.com/ipfs/go-ipfs-api"
 	pubsub "github.com/keks/go-orbitdb/pubsub"
 )
 
